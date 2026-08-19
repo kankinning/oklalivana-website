@@ -130,7 +130,13 @@
       if (!lab) return;
       found.push({ sec: sec, label: lab });
     });
-    if (found.length < 3) return;               /* too few to be worth a rail */
+    /* fewer than three chapters is not worth a rail — and any rail built for a
+       previous DOM (e.g. an accordion panel that has since closed) must go */
+    if (found.length < 3) {
+      if (rail) { rail.remove(); rail = null; }
+      chapters = [];
+      return;
+    }
     var sig = found.map(function (f) { return f.sec.id + f.label; }).join('|');
     if (rail && rail.getAttribute('data-sig') === sig) { chapters = found; return; }
     if (!rail) {
@@ -202,7 +208,9 @@
     document.addEventListener('scroll', onScroll, { capture: true, passive: true });
     window.addEventListener('resize', onScroll);
     new MutationObserver(function () { onScroll(); }).observe(document.documentElement, { childList: true, subtree: true });
-    setInterval(function () { checkReveals(); checkCounts(); }, 400);
+    /* content can appear and disappear after load (accordion panels), so the
+       chapter rail is rebuilt on the same tick as the reveal check */
+    setInterval(function () { checkReveals(); checkCounts(); buildChrome(); }, 400);
     /* the template streams in, so chapters appear over the first seconds */
     [300, 900, 2000, 4000].forEach(function (t) {
       setTimeout(function () { buildChrome(); paintProgress(); }, t);
